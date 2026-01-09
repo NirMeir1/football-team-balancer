@@ -1,0 +1,24 @@
+{
+  "players": [
+    { "name": "רני", "technical": 95, "fitness": 95 },
+    { "name": "גל רצון", "technical": 85, "fitness": 80 },
+    { "name": "עוז", "technical": 80, "fitness": 80 },
+    { "name": "גור", "technical": 75, "fitness": 75 },
+    { "name": "אבי בוהדנה", "technical": 75, "fitness": 70 },
+    { "name": "דניאל", "technical": 75, "fitness": 75 },
+    { "name": "רז", "technical": 75, "fitness": 80 },
+    { "name": "איתי", "technical": 75, "fitness": 75 },
+    { "name": "איתמר", "technical": 75, "fitness": 80 },
+    { "name": "אלון אוריו", "technical": 70, "fitness": 70 },
+    { "name": "גל אח של שחר", "technical": 75, "fitness": 80 },
+    { "name": "יהודה", "technical": 75, "fitness": 60 },
+    { "name": "יוני", "technical": 70, "fitness": 70 },
+    { "name": "לישי", "technical": 65, "fitness": 65 },
+    { "name": "אסף", "technical": 50, "fitness": 40 },
+    { "name": "ניר", "technical": 50, "fitness": 70 },
+    { "name": "ברי", "technical": 60, "fitness": 60 },
+    { "name": "אורן", "technical": 50, "fitness": 60 },
+    { "name": "עומר", "technical": 65, "fitness": 50 },
+    { "name": "שחר", "technical": 60, "fitness": 60 }
+  ]
+}
