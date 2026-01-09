@@ -1,13 +1,27 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Player, PlayerFormData, TeamResult } from './types';
 import { playerService } from './services/playerService';
 import { balanceTeams } from './services/teamBalancer';
+import { Header } from './components/layout/Header';
 import { PlayerList } from './components/PlayerList';
 import { TeamSelector } from './components/TeamSelector';
 import { TeamResults } from './components/TeamResults';
 import './App.css';
 
 type Screen = 'players' | 'select' | 'results';
+
+const pageVariants = {
+  initial: { opacity: 0, x: -20 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 20 },
+};
+
+const pageTransition = {
+  type: 'spring' as const,
+  stiffness: 300,
+  damping: 30,
+};
 
 function App() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -55,59 +69,63 @@ function App() {
     setTeamResult(null);
   };
 
-  const navItems: { screen: Screen; label: string }[] = [
-    { screen: 'players', label: 'שחקנים' },
-    { screen: 'select', label: 'בחירה' },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-lg mx-auto">
-          <div className="flex" dir="rtl">
-            {navItems.map((item) => (
-              <button
-                key={item.screen}
-                onClick={() => setCurrentScreen(item.screen)}
-                className={`flex-1 py-4 text-center font-medium touch-target transition-colors ${
-                  currentScreen === item.screen || (currentScreen === 'results' && item.screen === 'select')
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <Header currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
 
-      {/* Main Content */}
-      <main className="max-w-lg mx-auto pb-20">
-        {currentScreen === 'players' && (
-          <PlayerList
-            players={players}
-            onAddPlayer={handleAddPlayer}
-            onUpdatePlayer={handleUpdatePlayer}
-            onDeletePlayer={handleDeletePlayer}
-          />
-        )}
+      <main className="max-w-lg mx-auto px-4">
+        <AnimatePresence mode="wait">
+          {currentScreen === 'players' && (
+            <motion.div
+              key="players"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={pageTransition}
+            >
+              <PlayerList
+                players={players}
+                onAddPlayer={handleAddPlayer}
+                onUpdatePlayer={handleUpdatePlayer}
+                onDeletePlayer={handleDeletePlayer}
+              />
+            </motion.div>
+          )}
 
-        {currentScreen === 'select' && (
-          <TeamSelector
-            players={players}
-            onArrangeTeams={handleArrangeTeams}
-          />
-        )}
+          {currentScreen === 'select' && (
+            <motion.div
+              key="select"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={pageTransition}
+            >
+              <TeamSelector
+                players={players}
+                onArrangeTeams={handleArrangeTeams}
+              />
+            </motion.div>
+          )}
 
-        {currentScreen === 'results' && teamResult && (
-          <TeamResults
-            result={teamResult}
-            onShuffle={handleShuffle}
-            onConfirm={handleConfirm}
-          />
-        )}
+          {currentScreen === 'results' && teamResult && (
+            <motion.div
+              key="results"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={pageTransition}
+            >
+              <TeamResults
+                result={teamResult}
+                onShuffle={handleShuffle}
+                onConfirm={handleConfirm}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

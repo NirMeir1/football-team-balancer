@@ -1,20 +1,39 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Check, Sparkles, RotateCcw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { Player } from '../types';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { cn } from '../lib/utils';
 
 interface TeamSelectorProps {
   players: Player[];
   onArrangeTeams: (selectedPlayers: Player[]) => void;
 }
 
+const listItemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.02,
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  }),
+};
+
 export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  // Sort players by overall rating (highest first)
-  const sortedPlayers = [...players].sort((a, b) => b.overallRating - a.overallRating);
+  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'he'));
 
   const selectedCount = selectedIds.size;
   const isExactly15 = selectedCount === 15;
+  const progress = (selectedCount / 15) * 100;
 
   useEffect(() => {
     if (selectedCount > 15) {
@@ -36,9 +55,10 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
     setSelectedIds(newSelected);
   };
 
-  const handleSelectAll = () => {
+  const handleSelectTop15 = () => {
     const newSelected = new Set<string>();
-    sortedPlayers.slice(0, 15).forEach(p => newSelected.add(p.id));
+    const byRating = [...players].sort((a, b) => b.overallRating - a.overallRating);
+    byRating.slice(0, 15).forEach(p => newSelected.add(p.id));
     setSelectedIds(newSelected);
   };
 
@@ -55,89 +75,261 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
     onArrangeTeams(selectedPlayers);
   };
 
-  return (
-    <div className="p-4" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">בחירת שחקנים למשחק</h1>
+  // Get initials from name
+  const getInitials = (name: string): string => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
-      <div className="flex justify-between items-center mb-4">
-        <div className={`text-lg font-medium ${isExactly15 ? 'text-green-600' : 'text-gray-600'}`}>
-          נבחרו: {selectedCount}/15
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleSelectAll}
-            className="text-sm text-blue-500 hover:text-blue-700 px-3 py-1"
-          >
-            בחר 15 מובילים
-          </button>
-          <button
-            onClick={handleClearAll}
-            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1"
-          >
-            נקה הכל
-          </button>
-        </div>
+  // Get consistent color based on name
+  const getAvatarGradient = (name: string): string => {
+    const colors = [
+      'from-blue-500 to-blue-600',
+      'from-emerald-500 to-emerald-600',
+      'from-purple-500 to-purple-600',
+      'from-pink-500 to-pink-600',
+      'from-amber-500 to-amber-600',
+      'from-cyan-500 to-cyan-600',
+      'from-rose-500 to-rose-600',
+      'from-indigo-500 to-indigo-600',
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
+  return (
+    <div className="py-4 pb-32" dir="rtl">
+      {/* Header */}
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold bg-gradient-to-l from-emerald-600 to-green-700 bg-clip-text text-transparent mb-1">
+          בחירת שחקנים
+        </h1>
+        <p className="text-gray-500 text-sm">בחר 15 שחקנים לחלוקה ל-3 קבוצות</p>
       </div>
 
-      {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+      {/* Progress & Actions Card */}
+      <Card hover={false} className="p-4 mb-5">
+        {/* Counter Display */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm',
+                isExactly15
+                  ? 'bg-gradient-to-br from-emerald-400 to-green-500'
+                  : 'bg-gradient-to-br from-gray-100 to-gray-200'
+              )}
+            >
+              <span className={cn(
+                'font-bold text-2xl',
+                isExactly15 ? 'text-white' : 'text-gray-700'
+              )}>
+                {selectedCount}
+              </span>
+            </div>
+            <div>
+              <p className={cn(
+                'font-bold text-lg',
+                isExactly15 ? 'text-emerald-600' : 'text-gray-800'
+              )}>
+                {isExactly15 ? 'מוכן!' : `${selectedCount} / 15`}
+              </p>
+              <p className="text-sm text-gray-500">
+                {isExactly15 ? 'אפשר לחלק לקבוצות' : `חסרים ${15 - selectedCount} שחקנים`}
+              </p>
+            </div>
+          </div>
 
-      <div className="space-y-2 mb-6">
-        {sortedPlayers.map((player) => {
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSelectTop15}
+              className="text-xs"
+              leftIcon={<Sparkles className="h-4 w-4" />}
+            >
+              טופ 15
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearAll}
+              className="text-xs text-gray-500"
+              leftIcon={<RotateCcw className="h-4 w-4" />}
+            >
+              נקה
+            </Button>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div
+            className={cn(
+              'h-full rounded-full transition-colors duration-300',
+              isExactly15
+                ? 'bg-gradient-to-l from-emerald-400 to-green-500'
+                : selectedCount > 0
+                ? 'bg-gradient-to-l from-blue-400 to-blue-500'
+                : 'bg-gray-200'
+            )}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(progress, 100)}%` }}
+            transition={{ type: 'spring' as const, stiffness: 100, damping: 20 }}
+          />
+        </div>
+      </Card>
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-red-50 text-red-600 p-4 rounded-2xl mb-5 flex items-center gap-3 border border-red-100"
+          >
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <span className="font-medium">{error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Players Grid */}
+      <div className="space-y-3">
+        {sortedPlayers.map((player, index) => {
           const isSelected = selectedIds.has(player.id);
           const isDisabled = !isSelected && selectedCount >= 15;
 
           return (
-            <label
+            <motion.div
               key={player.id}
-              className={`flex items-center p-4 rounded-lg cursor-pointer transition-colors ${
-                isSelected
-                  ? 'bg-blue-50 border-2 border-blue-500'
-                  : isDisabled
-                  ? 'bg-gray-100 border-2 border-gray-200 opacity-50'
-                  : 'bg-white border-2 border-gray-200 hover:border-gray-300'
-              }`}
+              custom={index}
+              variants={listItemVariants}
+              initial="hidden"
+              animate="visible"
             >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => handleToggle(player.id)}
+              <button
+                type="button"
+                onClick={() => handleToggle(player.id)}
                 disabled={isDisabled}
-                className="w-5 h-5 text-blue-500 rounded focus:ring-blue-500 ml-3"
-              />
-              <div className="flex-1 flex justify-between items-center">
-                <div>
-                  <span className="font-medium text-gray-900">{player.name}</span>
-                  {player.status === 'guest' && (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded mr-2">
-                      אורח
-                    </span>
+                className={cn(
+                  'w-full min-h-[72px] flex items-center gap-4 p-4 rounded-2xl transition-all duration-200',
+                  'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
+                  isSelected
+                    ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md shadow-emerald-500/10'
+                    : isDisabled
+                    ? 'bg-gray-50 border-2 border-gray-100 opacity-40 cursor-not-allowed'
+                    : 'bg-white border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]'
+                )}
+              >
+                {/* Large Checkbox - 44x44 touch target */}
+                <div
+                  className={cn(
+                    'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                    isSelected
+                      ? 'bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg shadow-emerald-500/30'
+                      : 'bg-gray-100 border-2 border-gray-200'
+                  )}
+                >
+                  {isSelected ? (
+                    <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                  ) : (
+                    <div className="w-5 h-5 rounded-md border-2 border-gray-300 bg-white" />
                   )}
                 </div>
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">
-                  {player.overallRating}
+
+                {/* Avatar */}
+                <div
+                  className={cn(
+                    'w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md transition-transform duration-200',
+                    'bg-gradient-to-br',
+                    getAvatarGradient(player.name),
+                    isSelected && 'scale-105'
+                  )}
+                >
+                  {getInitials(player.name)}
                 </div>
-              </div>
-            </label>
+
+                {/* Player Info */}
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={cn(
+                      'font-semibold text-base transition-colors duration-200',
+                      isSelected ? 'text-emerald-700' : 'text-gray-900'
+                    )}>
+                      {player.name}
+                    </span>
+                    {player.status === 'guest' && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium">
+                        אורח
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    דירוג: {player.overallRating}
+                  </p>
+                </div>
+
+                {/* Selection Indicator */}
+                <div className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200',
+                  isSelected
+                    ? 'bg-emerald-100'
+                    : 'bg-transparent'
+                )}>
+                  {isSelected && (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  )}
+                </div>
+              </button>
+            </motion.div>
           );
         })}
       </div>
 
-      <div className="sticky bottom-4">
-        <button
-          onClick={handleArrangeTeams}
-          disabled={!isExactly15}
-          className={`w-full py-4 rounded-lg font-bold text-lg touch-target transition-colors ${
-            isExactly15
-              ? 'bg-green-500 text-white hover:bg-green-600'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+      {/* Empty State */}
+      {players.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-16"
         >
-          סדר קבוצות
-        </button>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <Users className="h-10 w-10 text-gray-400" />
+          </div>
+          <h3 className="text-gray-900 font-bold text-lg mb-1">אין שחקנים</h3>
+          <p className="text-gray-500">הוסף שחקנים בלשונית "שחקנים"</p>
+        </motion.div>
+      )}
+
+      {/* Fixed Bottom Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-gray-100 via-gray-100 to-transparent">
+        <div className="max-w-lg mx-auto">
+          <Button
+            onClick={handleArrangeTeams}
+            disabled={!isExactly15}
+            size="lg"
+            className={cn(
+              'w-full text-lg h-14 rounded-2xl shadow-lg',
+              isExactly15
+                ? 'shadow-emerald-500/30'
+                : 'opacity-50 shadow-none'
+            )}
+            leftIcon={<Users className="h-6 w-6" />}
+          >
+            חלק לקבוצות
+          </Button>
+          {!isExactly15 && selectedCount > 0 && (
+            <p className="text-center text-sm text-gray-500 mt-2">
+              בחר עוד {15 - selectedCount} שחקנים להמשך
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
