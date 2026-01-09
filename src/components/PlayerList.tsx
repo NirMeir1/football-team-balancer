@@ -1,6 +1,12 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Pencil, Trash2, Users } from 'lucide-react';
 import type { Player, PlayerFormData } from '../types';
 import { PlayerForm } from './PlayerForm';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { Modal, ModalContent } from './ui/Modal';
+import { Avatar } from './ui/Avatar';
 
 interface PlayerListProps {
   players: Player[];
@@ -9,10 +15,29 @@ interface PlayerListProps {
   onDeletePlayer: (id: string) => void;
 }
 
+const listItemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.05,
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  }),
+  exit: {
+    opacity: 0,
+    x: -100,
+    transition: { duration: 0.2 },
+  },
+};
+
 export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }: PlayerListProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Player | null>(null);
 
   const handleAddClick = () => {
     setEditingPlayer(null);
@@ -34,89 +59,112 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
     setEditingPlayer(null);
   };
 
-  const handleDeleteClick = (id: string) => {
-    setDeleteConfirm(id);
+  const handleDeleteClick = (player: Player) => {
+    setDeleteConfirm(player);
   };
 
   const confirmDelete = () => {
     if (deleteConfirm) {
-      onDeletePlayer(deleteConfirm);
+      onDeletePlayer(deleteConfirm.id);
       setDeleteConfirm(null);
     }
   };
 
-  // Sort players by overall rating (highest first)
-  const sortedPlayers = [...players].sort((a, b) => b.overallRating - a.overallRating);
+  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'he'));
 
   return (
-    <div className="p-4" dir="rtl">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">ניהול שחקנים</h1>
-        <button
-          onClick={handleAddClick}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md font-medium touch-target hover:bg-blue-600 transition-colors"
-        >
-          + הוסף שחקן
-        </button>
+    <div className="py-4 pb-8" dir="rtl">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-l from-emerald-600 to-green-700 bg-clip-text text-transparent">
+              ניהול שחקנים
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {players.length} שחקנים רשומים
+            </p>
+          </div>
+          <Button onClick={handleAddClick} leftIcon={<Plus className="h-5 w-5" />}>
+            הוסף שחקן
+          </Button>
+        </div>
       </div>
 
-      <div className="text-sm text-gray-600 mb-4">
-        סה"כ {players.length} שחקנים
-      </div>
+      {/* Players Grid */}
+      <div className="grid gap-3">
+        <AnimatePresence mode="popLayout">
+          {sortedPlayers.map((player, index) => (
+            <motion.div
+              key={player.id}
+              custom={index}
+              variants={listItemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              layout
+            >
+              <Card className="p-4">
+                <div className="flex items-center gap-4">
+                  <Avatar name={player.name} />
 
-      <div className="space-y-2">
-        {sortedPlayers.map((player) => (
-          <div
-            key={player.id}
-            className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 text-lg">{player.name}</span>
-                  {player.status === 'guest' && (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
-                      אורח
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 text-sm text-gray-600 space-y-1">
-                  <div className="flex gap-4">
-                    <span>טכני: {player.technicalSkill}</span>
-                    <span>כושר: {player.fitnessSkill}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {player.name}
+                      </h3>
+                      {player.status === 'guest' && (
+                        <span className="inline-flex items-center text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 font-medium">
+                          אורח
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditClick(player)}
+                      title="עריכה"
+                    >
+                      <Pencil className="h-5 w-5 text-gray-400 hover:text-emerald-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(player)}
+                      title="מחיקה"
+                    >
+                      <Trash2 className="h-5 w-5 text-gray-400 hover:text-red-600" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">
-                  {player.overallRating}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditClick(player)}
-                    className="text-blue-500 hover:text-blue-700 p-2 touch-target"
-                    title="עריכה"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(player.id)}
-                    className="text-red-500 hover:text-red-700 p-2 touch-target"
-                    title="מחיקה"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+              </Card>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
+      {/* Empty State */}
+      {players.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-16"
+        >
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+            <Users className="h-10 w-10 text-emerald-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">אין שחקנים עדיין</h3>
+          <p className="text-gray-500 mb-4">התחל להוסיף שחקנים לרשימה</p>
+          <Button onClick={handleAddClick} leftIcon={<Plus className="h-5 w-5" />}>
+            הוסף שחקן ראשון
+          </Button>
+        </motion.div>
+      )}
+
+      {/* Player Form Modal */}
       {showForm && (
         <PlayerForm
           player={editingPlayer}
@@ -128,30 +176,37 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
         />
       )}
 
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm" dir="rtl">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">אישור מחיקה</h3>
-            <p className="text-gray-600 mb-6">
-              האם אתה בטוח שברצונך למחוק את השחקן?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={confirmDelete}
-                className="flex-1 bg-red-500 text-white py-3 px-4 rounded-md font-medium touch-target hover:bg-red-600 transition-colors"
-              >
-                מחק
-              </button>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-md font-medium touch-target hover:bg-gray-300 transition-colors"
-              >
-                ביטול
-              </button>
-            </div>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        showCloseButton={false}
+      >
+        <ModalContent className="text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center"
+          >
+            <Trash2 className="h-7 w-7 text-red-600" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">מחיקת שחקן</h3>
+          <p className="text-gray-500 mb-6">
+            האם אתה בטוח שברצונך למחוק את <span className="font-semibold text-gray-900">{deleteConfirm?.name}</span>?
+            <br />
+            פעולה זו אינה ניתנת לביטול.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="destructive" className="flex-1" onClick={confirmDelete}>
+              מחק
+            </Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setDeleteConfirm(null)}>
+              ביטול
+            </Button>
           </div>
-        </div>
-      )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
