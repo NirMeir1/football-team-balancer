@@ -9,6 +9,8 @@ interface SliderProps {
   min?: number;
   max?: number;
   showTooltip?: boolean;
+  disabled?: boolean;
+  onDisabledClick?: () => void;
 }
 
 export function Slider({
@@ -18,6 +20,8 @@ export function Slider({
   min = 0,
   max = 100,
   showTooltip = true,
+  disabled = false,
+  onDisabledClick,
 }: SliderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const percentage = ((value - min) / (max - min)) * 100;
@@ -27,11 +31,25 @@ export function Slider({
     onChange(Number(e.target.value));
   };
 
+  const handleDisabledClick = () => {
+    if (disabled && onDisabledClick) {
+      onDisabledClick();
+    }
+  };
+
   return (
-    <div className="w-full">
+    <div className={cn('w-full relative', disabled && 'opacity-60')}>
+      {/* Clickable overlay when disabled */}
+      {disabled && (
+        <div
+          className="absolute inset-0 z-20 cursor-pointer"
+          onClick={handleDisabledClick}
+        />
+      )}
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-semibold text-gray-700">
+        <label className={cn('text-sm font-semibold', disabled ? 'text-gray-400' : 'text-gray-700')}>
           {label}
+          {disabled && <span className="mr-2 text-xs">🔒</span>}
         </label>
         <span
           className={cn(
@@ -57,12 +75,15 @@ export function Slider({
           max={max}
           value={value}
           onChange={handleChange}
-          onMouseDown={() => setIsDragging(true)}
+          onMouseDown={() => !disabled && setIsDragging(true)}
           onMouseUp={() => setIsDragging(false)}
-          onTouchStart={() => setIsDragging(true)}
+          onTouchStart={() => !disabled && setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="relative w-full h-2 appearance-none bg-transparent cursor-pointer z-10
-            [&::-webkit-slider-thumb]:appearance-none
+          disabled={disabled}
+          className={cn(
+            "relative w-full h-2 appearance-none bg-transparent z-10",
+            disabled ? "cursor-not-allowed" : "cursor-pointer",
+            `[&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-5
             [&::-webkit-slider-thumb]:h-5
             [&::-webkit-slider-thumb]:rounded-full
@@ -70,9 +91,7 @@ export function Slider({
             [&::-webkit-slider-thumb]:border-2
             [&::-webkit-slider-thumb]:border-emerald-500
             [&::-webkit-slider-thumb]:shadow-lg
-            [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-thumb]:transition-transform
-            [&::-webkit-slider-thumb]:hover:scale-110
             [&::-moz-range-thumb]:appearance-none
             [&::-moz-range-thumb]:w-5
             [&::-moz-range-thumb]:h-5
@@ -80,11 +99,14 @@ export function Slider({
             [&::-moz-range-thumb]:bg-white
             [&::-moz-range-thumb]:border-2
             [&::-moz-range-thumb]:border-emerald-500
-            [&::-moz-range-thumb]:shadow-lg
-            [&::-moz-range-thumb]:cursor-pointer"
+            [&::-moz-range-thumb]:shadow-lg`,
+            !disabled && `[&::-webkit-slider-thumb]:cursor-pointer
+            [&::-webkit-slider-thumb]:hover:scale-110
+            [&::-moz-range-thumb]:cursor-pointer`
+          )}
         />
         <AnimatePresence>
-          {showTooltip && isDragging && (
+          {showTooltip && isDragging && !disabled && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
