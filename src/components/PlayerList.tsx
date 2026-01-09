@@ -7,6 +7,7 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Modal, ModalContent } from './ui/Modal';
 import { Avatar } from './ui/Avatar';
+import { PinModal } from './ui/PinModal';
 
 interface PlayerListProps {
   players: Player[];
@@ -38,6 +39,10 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
   const [showForm, setShowForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Player | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingEditPlayer, setPendingEditPlayer] = useState<Player | null>(null);
+  const [pendingDeletePlayer, setPendingDeletePlayer] = useState<Player | null>(null);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
 
   const handleAddClick = () => {
     setEditingPlayer(null);
@@ -45,8 +50,29 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
   };
 
   const handleEditClick = (player: Player) => {
-    setEditingPlayer(player);
-    setShowForm(true);
+    if (isAdminUnlocked) {
+      setEditingPlayer(player);
+      setShowForm(true);
+    } else {
+      setPendingEditPlayer(player);
+      setShowPinModal(true);
+    }
+  };
+
+  const handlePinSuccess = () => {
+    setShowPinModal(false);
+    setIsAdminUnlocked(true);
+
+    if (pendingEditPlayer) {
+      setEditingPlayer(pendingEditPlayer);
+      setShowForm(true);
+      setPendingEditPlayer(null);
+    }
+
+    if (pendingDeletePlayer) {
+      setDeleteConfirm(pendingDeletePlayer);
+      setPendingDeletePlayer(null);
+    }
   };
 
   const handleFormSubmit = (data: PlayerFormData) => {
@@ -60,7 +86,12 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
   };
 
   const handleDeleteClick = (player: Player) => {
-    setDeleteConfirm(player);
+    if (isAdminUnlocked) {
+      setDeleteConfirm(player);
+    } else {
+      setPendingDeletePlayer(player);
+      setShowPinModal(true);
+    }
   };
 
   const confirmDelete = () => {
@@ -207,6 +238,17 @@ export function PlayerList({ players, onAddPlayer, onUpdatePlayer, onDeletePlaye
           </div>
         </ModalContent>
       </Modal>
+
+      {/* PIN Modal for Admin Access */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPendingEditPlayer(null);
+          setPendingDeletePlayer(null);
+        }}
+        onSuccess={handlePinSuccess}
+      />
     </div>
   );
 }

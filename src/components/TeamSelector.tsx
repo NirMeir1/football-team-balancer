@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Check, Sparkles, RotateCcw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Users, Check, RotateCcw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { Player } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -52,13 +52,6 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
         newSelected.add(playerId);
       }
     }
-    setSelectedIds(newSelected);
-  };
-
-  const handleSelectTop15 = () => {
-    const newSelected = new Set<string>();
-    const byRating = [...players].sort((a, b) => b.overallRating - a.overallRating);
-    byRating.slice(0, 15).forEach(p => newSelected.add(p.id));
     setSelectedIds(newSelected);
   };
 
@@ -143,27 +136,16 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleSelectTop15}
-              className="text-xs"
-              leftIcon={<Sparkles className="h-4 w-4" />}
-            >
-              טופ 15
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearAll}
-              className="text-xs text-gray-500"
-              leftIcon={<RotateCcw className="h-4 w-4" />}
-            >
-              נקה
-            </Button>
-          </div>
+          {/* Action Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            className="text-xs text-gray-500"
+            leftIcon={<RotateCcw className="h-4 w-4" />}
+          >
+            נקה
+          </Button>
         </div>
 
         {/* Progress Bar */}
@@ -270,9 +252,6 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    דירוג: {player.overallRating}
-                  </p>
                 </div>
 
                 {/* Selection Indicator */}
