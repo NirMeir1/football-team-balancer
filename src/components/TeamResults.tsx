@@ -104,7 +104,7 @@ export function TeamResults({ result, onShuffle, onConfirm }: TeamResultsProps) 
         <h1 className="text-2xl font-bold bg-gradient-to-l from-emerald-600 to-green-700 bg-clip-text text-transparent mb-1">
           הקבוצות מוכנות!
         </h1>
-        <p className="text-gray-500 text-sm">3 קבוצות מאוזנות עם 5 שחקנים בכל אחת</p>
+        <p className="text-gray-500 text-sm">{teams.length} קבוצות מאוזנות עם {teams[0]?.players.length || 5} שחקנים בכל אחת</p>
       </motion.div>
 
       {/* Teams */}

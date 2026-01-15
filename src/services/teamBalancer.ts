@@ -18,34 +18,18 @@ function cloneTeams(teams: Team[]): Team[] {
   }));
 }
 
-function snakeDraft(sortedPlayers: Player[]): Team[] {
-  const teams: Team[] = [
-    { id: 'A', players: [], totalRating: 0 },
-    { id: 'B', players: [], totalRating: 0 },
-    { id: 'C', players: [], totalRating: 0 }
-  ];
+function snakeDraft(sortedPlayers: Player[], numTeams: 2 | 3): Team[] {
+  const teamIds: Array<'A' | 'B' | 'C'> = numTeams === 2 ? ['A', 'B'] : ['A', 'B', 'C'];
+  const teams: Team[] = teamIds.map(id => ({ id, players: [], totalRating: 0 }));
 
-  // Snake draft pattern for 15 players (5 rounds)
-  // Round 1: A, B, C (indices 0,1,2)
-  // Round 2: C, B, A (indices 3,4,5)
-  // Round 3: A, B, C (indices 6,7,8)
-  // Round 4: C, B, A (indices 9,10,11)
-  // Round 5: A, B, C (indices 12,13,14)
-
-  const draftOrder = [
-    0, 1, 2,  // Round 1: A, B, C
-    2, 1, 0,  // Round 2: C, B, A
-    0, 1, 2,  // Round 3: A, B, C
-    2, 1, 0,  // Round 4: C, B, A
-    0, 1, 2   // Round 5: A, B, C
-  ];
-
-  for (let i = 0; i < sortedPlayers.length && i < 15; i++) {
-    const teamIndex = draftOrder[i];
+  // Snake draft pattern
+  for (let i = 0; i < sortedPlayers.length; i++) {
+    const round = Math.floor(i / numTeams);
+    const posInRound = i % numTeams;
+    const teamIndex = round % 2 === 0 ? posInRound : numTeams - 1 - posInRound;
     teams[teamIndex].players.push(sortedPlayers[i]);
   }
 
-  // Calculate totals
   teams.forEach(team => {
     team.totalRating = calculateTeamTotal(team.players);
   });
@@ -133,9 +117,10 @@ function optimizeWithSwaps(teams: Team[], maxIterations: number = 100): Team[] {
 }
 
 export function balanceTeams(selectedPlayers: Player[], addRandomization: boolean = false): TeamResult {
-  if (selectedPlayers.length !== 15) {
-    throw new Error('Exactly 15 players are required for team balancing');
+  if (selectedPlayers.length !== 10 && selectedPlayers.length !== 15) {
+    throw new Error('Exactly 10 or 15 players are required for team balancing');
   }
+  const numTeams: 2 | 3 = selectedPlayers.length === 10 ? 2 : 3;
 
   // Sort players by overall rating (highest to lowest)
   let sortedPlayers = [...selectedPlayers].sort((a, b) => b.overallRating - a.overallRating);
@@ -170,7 +155,7 @@ export function balanceTeams(selectedPlayers: Player[], addRandomization: boolea
   }
 
   // Step 1: Snake draft
-  let teams = snakeDraft(sortedPlayers);
+  let teams = snakeDraft(sortedPlayers, numTeams);
 
   // Step 2: Optimize with greedy swaps
   teams = optimizeWithSwaps(teams);

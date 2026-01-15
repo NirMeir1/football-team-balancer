@@ -32,8 +32,9 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
   const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'he'));
 
   const selectedCount = selectedIds.size;
-  const isExactly15 = selectedCount === 15;
-  const progress = (selectedCount / 15) * 100;
+  const isValid = selectedCount === 10 || selectedCount === 15;
+  const target = selectedCount <= 10 ? 10 : 15;
+  const progress = (selectedCount / target) * 100;
 
   useEffect(() => {
     if (selectedCount > 15) {
@@ -60,8 +61,8 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
   };
 
   const handleArrangeTeams = () => {
-    if (!isExactly15) {
-      setError('יש לבחור בדיוק 15 שחקנים');
+    if (!isValid) {
+      setError('יש לבחור 10 או 15 שחקנים');
       return;
     }
     const selectedPlayers = players.filter(p => selectedIds.has(p.id));
@@ -100,7 +101,7 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
         <h1 className="text-2xl font-bold bg-gradient-to-l from-emerald-600 to-green-700 bg-clip-text text-transparent mb-1">
           בחירת שחקנים
         </h1>
-        <p className="text-gray-500 text-sm">בחר 15 שחקנים לחלוקה ל-3 קבוצות</p>
+        <p className="text-gray-500 text-sm">בחר 10 שחקנים (2 קבוצות) או 15 שחקנים (3 קבוצות)</p>
       </div>
 
       {/* Progress & Actions Card */}
@@ -111,14 +112,14 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
             <div
               className={cn(
                 'w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm',
-                isExactly15
+                isValid
                   ? 'bg-gradient-to-br from-emerald-400 to-green-500'
                   : 'bg-gradient-to-br from-gray-100 to-gray-200'
               )}
             >
               <span className={cn(
                 'font-bold text-2xl',
-                isExactly15 ? 'text-white' : 'text-gray-700'
+                isValid ? 'text-white' : 'text-gray-700'
               )}>
                 {selectedCount}
               </span>
@@ -126,12 +127,12 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
             <div>
               <p className={cn(
                 'font-bold text-lg',
-                isExactly15 ? 'text-emerald-600' : 'text-gray-800'
+                isValid ? 'text-emerald-600' : 'text-gray-800'
               )}>
-                {isExactly15 ? 'מוכן!' : `${selectedCount} / 15`}
+                {isValid ? 'מוכן!' : `${selectedCount} / ${target}`}
               </p>
               <p className="text-sm text-gray-500">
-                {isExactly15 ? 'אפשר לחלק לקבוצות' : `חסרים ${15 - selectedCount} שחקנים`}
+                {isValid ? `אפשר לחלק ל-${selectedCount === 10 ? 2 : 3} קבוצות` : `חסרים ${target - selectedCount} שחקנים`}
               </p>
             </div>
           </div>
@@ -153,7 +154,7 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
           <motion.div
             className={cn(
               'h-full rounded-full transition-colors duration-300',
-              isExactly15
+              isValid
                 ? 'bg-gradient-to-l from-emerald-400 to-green-500'
                 : selectedCount > 0
                 ? 'bg-gradient-to-l from-blue-400 to-blue-500'
@@ -291,11 +292,11 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
         <div className="max-w-lg mx-auto">
           <Button
             onClick={handleArrangeTeams}
-            disabled={!isExactly15}
+            disabled={!isValid}
             size="lg"
             className={cn(
               'w-full text-lg h-14 rounded-2xl shadow-lg',
-              isExactly15
+              isValid
                 ? 'shadow-emerald-500/30'
                 : 'opacity-50 shadow-none'
             )}
@@ -303,9 +304,9 @@ export function TeamSelector({ players, onArrangeTeams }: TeamSelectorProps) {
           >
             חלק לקבוצות
           </Button>
-          {!isExactly15 && selectedCount > 0 && (
+          {!isValid && selectedCount > 0 && (
             <p className="text-center text-sm text-gray-500 mt-2">
-              בחר עוד {15 - selectedCount} שחקנים להמשך
+              בחר עוד {target - selectedCount} שחקנים להמשך
             </p>
           )}
         </div>
